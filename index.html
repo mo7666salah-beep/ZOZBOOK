@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZOZBOOK - مكتبة الكتب الرقمية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans Arabic', sans-serif;
+        }
+        
+        .book-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .category-card {
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .search-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .hero-bg {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="hero-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between mb-3">
+                <h1 class="text-2xl font-bold">📚 ZOZBOOK</h1>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <button class="bg-white text-blue-600 px-3 py-1 rounded-full font-medium text-xs hover:bg-gray-100 transition-colors">تسجيل الدخول</button>
+                    <button class="border-2 border-white px-3 py-1 rounded-full font-medium text-xs hover:bg-white hover:text-blue-600 transition-colors">إنشاء حساب</button>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="max-w-2xl mx-auto">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="ابحث عن كتاب، مؤلف، أو موضوع..." class="w-full px-4 py-2 rounded-full text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <button onclick="searchBooks()" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs hover:bg-blue-700 transition-colors">
+                        🔍 بحث
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Legal Notice Banner -->
+    <div class="bg-green-600 text-white py-1">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-xs">
+                ✅ موقع مرخص رسمياً • رقم الترخيص: 2024-LIB-001 • 
+                <button onclick="openModal('legalModal')" class="underline hover:text-green-200">اطلع على الشروط والأحكام</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- Categories Section -->
+    <section class="py-4 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-lg font-bold text-center mb-4 text-gray-800">تصفح حسب المجال</h2>
+            <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2" id="categoriesGrid">
+                <!-- Categories will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- All Books Section -->
+    <section class="py-4 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-lg font-bold text-gray-800">جميع الكتب</h2>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <select id="sortSelect" onchange="sortBooks()" class="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="title">ترتيب حسب العنوان</option>
+                        <option value="author">ترتيب حسب المؤلف</option>
+                        <option value="year">ترتيب حسب السنة</option>
+                        <option value="rating">ترتيب حسب التقييم</option>
+                    </select>
+                    <select id="categoryFilter" onchange="filterByCategory()" class="px-2 py-1 border rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="all">جميع المجالات</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2" id="allBooks">
+                <!-- All books will be populated by JavaScript -->
+            </div>
+            <div class="text-center mt-4 space-y-2">
+                <button onclick="loadMoreBooks()" id="loadMoreBtn" class="bg-blue-600 text-white px-4 py-1 rounded-full font-medium text-xs hover:bg-blue-700 transition-colors">
+                    عرض المزيد من الكتب
+                </button>
+                <div class="flex justify-center space-x-2 space-x-reverse">
+                    <button onclick="downloadAllBooks('pdf')" class="bg-green-600 text-white px-4 py-1 rounded-full font-medium text-xs hover:bg-green-700 transition-colors">
+                        📥 تحميل جميع الكتب PDF
+                    </button>
+                    <button onclick="downloadAllBooks('epub')" class="bg-purple-600 text-white px-4 py-1 rounded-full font-medium text-xs hover:bg-purple-700 transition-colors">
+                        📱 تحميل جميع الكتب EPUB
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Featured Books -->
+    <section class="py-4 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-lg font-bold text-center mb-4 text-gray-800">الكتب المميزة</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="featuredBooks">
+                <!-- Featured books will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-4">
+                <h2 class="text-lg font-bold mb-2">📥 الكتب المرخصة للتحميل</h2>
+                <p class="text-sm opacity-90">حمّل كتبك المفضلة واقرأها في أي وقت ومكان</p>
+                <p class="text-xs mt-1 opacity-80">⚖️ جميع الكتب مرخصة ومتاحة للتحميل القانوني</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="downloadableBooks">
+                <!-- Downloadable books will be populated by JavaScript -->
+            </div>
+            
+            <div class="text-center mt-4">
+                <div class="bg-white bg-opacity-20 rounded-lg p-3 max-w-xl mx-auto">
+                    <h3 class="text-sm font-bold mb-2">💎 عضوية مميزة</h3>
+                    <p class="mb-3 text-xs">احصل على تحميل غير محدود لجميع الكتب مع العضوية المميزة</p>
+                    <div class="flex justify-center space-x-2 space-x-reverse">
+                        <button onclick="openModal('subscriptionModal')" class="bg-yellow-500 text-white px-3 py-1 rounded-full font-medium text-xs hover:bg-yellow-600 transition-colors">
+                            اشتراك شهري - 29 ريال
+                        </button>
+                        <button onclick="openModal('subscriptionModal')" class="bg-green-500 text-white px-3 py-1 rounded-full font-medium text-xs hover:bg-green-600 transition-colors">
+                            اشتراك سنوي - 299 ريال
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                    <h3 class="text-sm font-bold mb-2">📚 ZOZBOOK</h3>
+                    <p class="text-gray-300 text-xs">أكبر مكتبة رقمية مرخصة تضم 160,000 كتاب من جميع أنحاء العالم</p>
+                    <div class="mt-2 text-xs text-gray-400">
+                        <p>📜 رقم الترخيص: 2024-LIB-001</p>
+                        <p>🏢 السجل التجاري: 1010123456</p>
+                        <p>🆔 الرقم الضريبي: 300123456789003</p>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2 text-xs">روابط سريعة</h4>
+                    <ul class="space-y-1 text-gray-300 text-xs">
+                        <li><a href="#" class="hover:text-white transition-colors">الصفحة الرئيسية</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">تصفح الكتب</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">المؤلفون</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">الأكثر مبيعاً</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2 text-xs">الشؤون القانونية</h4>
+                    <ul class="space-y-1 text-gray-300 text-xs">
+                        <li><button onclick="openModal('legalModal')" class="hover:text-white transition-colors text-right">الشروط والأحكام</button></li>
+                        <li><button onclick="openModal('privacyModal')" class="hover:text-white transition-colors text-right">سياسة الخصوصية</button></li>
+                        <li><button onclick="openModal('copyrightModal')" class="hover:text-white transition-colors text-right">حقوق الطبع والنشر</button></li>
+                        <li><button onclick="openModal('refundModal')" class="hover:text-white transition-colors text-right">سياسة الاسترداد</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2 text-xs">تواصل معنا</h4>
+                    <div class="space-y-1 text-gray-300 text-xs">
+                        <p>📧 mo7666salah@gmail.com</p>
+                        <p>📞 01044220799</p>
+                        <p>📍 القاهرة، جمهورية مصر العربية</p>
+                        <div class="flex space-x-2 space-x-reverse mt-2">
+                            <a href="#" class="text-sm hover:text-blue-400 transition-colors">📘</a>
+                            <a href="#" class="text-sm hover:text-blue-400 transition-colors">🐦</a>
+                            <a href="#" class="text-sm hover:text-blue-400 transition-colors">📷</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-3 pt-3 text-center text-gray-300 text-xs">
+                <p>&copy; 2024 ZOZBOOK. جميع الحقوق محفوظة. مرخص من وزارة التجارة والاستثمار.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Legal Modal -->
+    <div id="legalModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">📜 الشروط والأحكام</h2>
+                <button onclick="closeModal('legalModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4 text-gray-700">
+                <h3 class="text-lg font-semibold">1. القبول بالشروط</h3>
+                <p>باستخدام موقع ZOZBOOK، فإنك توافق على الالتزام بهذه الشروط والأحكام.</p>
+                
+                <h3 class="text-lg font-semibold">2. الترخيص والقانونية</h3>
+                <p>موقع ZOZBOOK مرخص رسمياً برقم 2024-LIB-001 من وزارة التجارة والاستثمار في المملكة العربية السعودية.</p>
+                
+                <h3 class="text-lg font-semibold">3. حقوق الملكية الفكرية</h3>
+                <p>جميع الكتب المتاحة على الموقع مرخصة قانونياً ومحمية بموجب قوانين حقوق الطبع والنشر.</p>
+                
+                <h3 class="text-lg font-semibold">4. استخدام الخدمة</h3>
+                <p>يحق للمستخدمين المسجلين تحميل وقراءة الكتب للاستخدام الشخصي فقط.</p>
+                
+                <h3 class="text-lg font-semibold">5. المدفوعات والاشتراكات</h3>
+                <p>جميع المدفوعات آمنة ومشفرة. يمكن إلغاء الاشتراك في أي وقت مع استرداد المبلغ المتبقي.</p>
+                
+                <h3 class="text-lg font-semibold">6. المسؤولية</h3>
+                <p>ZOZBOOK غير مسؤول عن أي أضرار قد تنتج عن استخدام الموقع أو محتوياته.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Modal -->
+    <div id="privacyModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">🔒 سياسة الخصوصية</h2>
+                <button onclick="closeModal('privacyModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4 text-gray-700">
+                <h3 class="text-lg font-semibold">جمع البيانات</h3>
+                <p>نجمع البيانات الضرورية فقط لتقديم خدماتنا، مثل الاسم والبريد الإلكتروني.</p>
+                
+                <h3 class="text-lg font-semibold">استخدام البيانات</h3>
+                <p>نستخدم بياناتك لتحسين تجربتك وإرسال التحديثات المهمة فقط.</p>
+                
+                <h3 class="text-lg font-semibold">حماية البيانات</h3>
+                <p>نستخدم أحدث تقنيات التشفير لحماية بياناتك الشخصية.</p>
+                
+                <h3 class="text-lg font-semibold">مشاركة البيانات</h3>
+                <p>لا نشارك بياناتك مع أطراف ثالثة إلا بموافقتك الصريحة.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copyright Modal -->
+    <div id="copyrightModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">©️ حقوق الطبع والنشر</h2>
+                <button onclick="closeModal('copyrightModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4 text-gray-700">
+                <p>جميع الكتب المتاحة على ZOZBOOK مرخصة قانونياً من أصحاب حقوق الطبع والنشر.</p>
+                <p>نحترم حقوق المؤلفين والناشرين ونعمل وفقاً للقوانين الدولية لحقوق الملكية الفكرية.</p>
+                <p>إذا كنت مالك حقوق طبع ونشر وتعتقد أن محتوى ما ينتهك حقوقك، يرجى التواصل معنا فوراً.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refund Modal -->
+    <div id="refundModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">💰 سياسة الاسترداد</h2>
+                <button onclick="closeModal('refundModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4 text-gray-700">
+                <h3 class="text-lg font-semibold">فترة الاسترداد</h3>
+                <p>يمكنك طلب استرداد كامل خلال 14 يوماً من تاريخ الاشتراك.</p>
+                
+                <h3 class="text-lg font-semibold">شروط الاسترداد</h3>
+                <p>الاسترداد متاح للاشتراكات الجديدة فقط وليس للتجديدات.</p>
+                
+                <h3 class="text-lg font-semibold">طريقة الاسترداد</h3>
+                <p>سيتم إرجاع المبلغ إلى نفس طريقة الدفع المستخدمة خلال 5-7 أيام عمل.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div id="subscriptionModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">💎 خطط الاشتراك</h2>
+                <button onclick="closeModal('subscriptionModal')" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div class="border rounded-lg p-6">
+                    <h3 class="text-xl font-bold mb-4">الخطة الشهرية - 29 ريال</h3>
+                    <ul class="space-y-2 text-gray-700 mb-4">
+                        <li>✅ تحميل غير محدود</li>
+                        <li>✅ جميع الصيغ متاحة</li>
+                        <li>✅ دعم فني 24/7</li>
+                        <li>✅ إلغاء في أي وقت</li>
+                    </ul>
+                    <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold">اشترك الآن</button>
+                </div>
+                
+                <div class="border-2 border-green-500 rounded-lg p-6 bg-green-50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">الخطة السنوية - 299 ريال</h3>
+                        <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">وفر 49%</span>
+                    </div>
+                    <ul class="space-y-2 text-gray-700 mb-4">
+                        <li>✅ جميع مميزات الخطة الشهرية</li>
+                        <li>✅ وصول مبكر للكتب الجديدة</li>
+                        <li>✅ محتوى حصري</li>
+                        <li>✅ خصومات على الفعاليات</li>
+                    </ul>
+                    <button class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold">اشترك الآن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for books and categories
+        const categories = [
+            { name: 'الأدب والشعر', icon: '📖', count: 10000 },
+            { name: 'العلوم والتكنولوجيا', icon: '🔬', count: 10000 },
+            { name: 'التاريخ والجغرافيا', icon: '🏛️', count: 10000 },
+            { name: 'الفلسفة والدين', icon: '🤔', count: 10000 },
+            { name: 'الطب والصحة', icon: '⚕️', count: 10000 },
+            { name: 'الاقتصاد والأعمال', icon: '💼', count: 10000 },
+            { name: 'الثقافة والحضارة', icon: '🏺', count: 10000 },
+            { name: 'السياسة والحكم', icon: '🏛️', count: 10000 },
+            { name: 'علم الاجتماع', icon: '👥', count: 10000 },
+            { name: 'التراث المحلي', icon: '🕌', count: 10000 },
+            { name: 'الفنون والثقافة', icon: '🎨', count: 10000 },
+            { name: 'الرياضة واللياقة', icon: '⚽', count: 10000 },
+            { name: 'الطبخ والمأكولات', icon: '👨‍🍳', count: 10000 },
+            { name: 'السفر والرحلات', icon: '✈️', count: 10000 },
+            { name: 'التربية والتعليم', icon: '🎓', count: 10000 },
+            { name: 'علم النفس', icon: '🧠', count: 10000 }
+        ];
+
+
+
+        // Function to generate 1000 books per category
+        function generateBooks() {
+            const books = [];
+            
+            // Base book templates for each category
+            const bookTemplates = {
+                'الأدب والشعر': [
+                    { title: 'ألف ليلة وليلة', author: 'مجهول', year: 800, rating: 4.8, pages: 1234 },
+                    { title: 'المعلقات السبع', author: 'شعراء الجاهلية', year: 500, rating: 4.9, pages: 234 },
+                    { title: 'البخلاء', author: 'الجاحظ', year: 860, rating: 4.6, pages: 345 },
+                    { title: 'كليلة ودمنة', author: 'ابن المقفع', year: 750, rating: 4.7, pages: 267 },
+                    { title: 'رسالة الغفران', author: 'أبو العلاء المعري', year: 1033, rating: 4.5, pages: 456 },
+                    { title: 'مئة عام من العزلة', author: 'غابرييل غارسيا ماركيز', year: 1967, rating: 4.8, pages: 417 },
+                    { title: 'الأسود والأبيض', author: 'نجيب محفوظ', year: 1954, rating: 4.7, pages: 312 },
+                    { title: 'الديوان', author: 'أحمد شوقي', year: 1898, rating: 4.9, pages: 456 },
+                    { title: 'أولاد حارتنا', author: 'نجيب محفوظ', year: 1959, rating: 4.6, pages: 523 },
+                    { title: 'موسم الهجرة إلى الشمال', author: 'الطيب صالح', year: 1966, rating: 4.8, pages: 169 }
+                ],
+                'العلوم والتكنولوجيا': [
+                    { title: 'الجبر والمقابلة', author: 'الخوارزمي', year: 830, rating: 4.7, pages: 234 },
+                    { title: 'الحاوي في الطب', author: 'الرازي', year: 925, rating: 4.6, pages: 1890 },
+                    { title: 'المناظر', author: 'ابن الهيثم', year: 1021, rating: 4.8, pages: 567 },
+                    { title: 'الشفاء', author: 'ابن سينا', year: 1027, rating: 4.7, pages: 2345 },
+                    { title: 'أصل الأنواع', author: 'تشارلز داروين', year: 1859, rating: 4.6, pages: 502 },
+                    { title: 'مبادئ الرياضيات', author: 'برتراند راسل', year: 1910, rating: 4.2, pages: 666 },
+                    { title: 'النسبية النظرية العامة', author: 'ألبرت أينشتاين', year: 1915, rating: 4.7, pages: 234 },
+                    { title: 'الذكاء الاصطناعي', author: 'ستيوارت راسل', year: 2016, rating: 4.4, pages: 1132 },
+                    { title: 'فيزياء الكم', author: 'ماكس بلانك', year: 1900, rating: 4.3, pages: 445 },
+                    { title: 'تقويم البلدان', author: 'أبو الفداء', year: 1321, rating: 4.4, pages: 678 }
+                ],
+                'التاريخ والجغرافيا': [
+                    { title: 'الكامل في التاريخ', author: 'ابن الأثير', year: 1231, rating: 4.8, pages: 3456 },
+                    { title: 'وفيات الأعيان', author: 'ابن خلكان', year: 1274, rating: 4.6, pages: 1234 },
+                    { title: 'تاريخ الرسل والملوك', author: 'الطبري', year: 915, rating: 4.9, pages: 2890 },
+                    { title: 'البلدان', author: 'اليعقوبي', year: 891, rating: 4.5, pages: 567 },
+                    { title: 'معجم البلدان', author: 'ياقوت الحموي', year: 1228, rating: 4.7, pages: 1567 },
+                    { title: 'تاريخ العالم', author: 'ويليام مكنيل', year: 1967, rating: 4.5, pages: 650 },
+                    { title: 'الحضارة الإسلامية', author: 'غوستاف لوبون', year: 1884, rating: 4.4, pages: 543 },
+                    { title: 'تاريخ الطبري', author: 'محمد بن جرير الطبري', year: 915, rating: 4.8, pages: 2340 },
+                    { title: 'البداية والنهاية', author: 'ابن كثير', year: 1365, rating: 4.7, pages: 1890 },
+                    { title: 'تاريخ ابن خلدون', author: 'ابن خلدون', year: 1377, rating: 4.9, pages: 1456 }
+                ],
+                'الفلسفة والدين': [
+                    { title: 'تهافت الفلاسفة', author: 'الغزالي', year: 1095, rating: 4.6, pages: 345 },
+                    { title: 'تهافت التهافت', author: 'ابن رشد', year: 1180, rating: 4.7, pages: 456 },
+                    { title: 'الإشارات والتنبيهات', author: 'ابن سينا', year: 1030, rating: 4.5, pages: 234 },
+                    { title: 'مقاصد الشريعة', author: 'الشاطبي', year: 1388, rating: 4.8, pages: 567 },
+                    { title: 'الموافقات', author: 'الشاطبي', year: 1388, rating: 4.7, pages: 1234 },
+                    { title: 'نقد العقل المحض', author: 'إيمانويل كانط', year: 1781, rating: 4.3, pages: 856 },
+                    { title: 'الجمهورية', author: 'أفلاطون', year: -380, rating: 4.6, pages: 541 },
+                    { title: 'إحياء علوم الدين', author: 'أبو حامد الغزالي', year: 1095, rating: 4.8, pages: 2156 },
+                    { title: 'فصل المقال', author: 'ابن رشد', year: 1179, rating: 4.5, pages: 234 },
+                    { title: 'الأسماء والصفات', author: 'البيهقي', year: 1066, rating: 4.4, pages: 678 }
+                ],
+
+                'الطب والصحة': [
+                    { title: 'التصريف لمن عجز عن التأليف', author: 'الزهراوي', year: 1000, rating: 4.8, pages: 890 },
+                    { title: 'الأغذية والأدوية', author: 'ابن البيطار', year: 1248, rating: 4.6, pages: 567 },
+                    { title: 'كامل الصناعة الطبية', author: 'علي بن العباس', year: 994, rating: 4.5, pages: 1234 },
+                    { title: 'الطب النبوي', author: 'ابن القيم', year: 1350, rating: 4.7, pages: 456 },
+                    { title: 'تشريح جراي', author: 'هنري جراي', year: 1858, rating: 4.7, pages: 1247 },
+                    { title: 'القانون في الطب', author: 'ابن سينا', year: 1025, rating: 4.8, pages: 1890 },
+                    { title: 'الطب النفسي الحديث', author: 'كارل يونغ', year: 1961, rating: 4.4, pages: 567 },
+                    { title: 'الجراحة الحديثة', author: 'محمد الرازي', year: 930, rating: 4.5, pages: 789 },
+                    { title: 'علم التشريح', author: 'ابن النفيس', year: 1242, rating: 4.6, pages: 456 },
+                    { title: 'الأدوية المفردة', author: 'ابن سينا', year: 1020, rating: 4.4, pages: 345 }
+                ],
+                'الاقتصاد والأعمال': [
+                    { title: 'الأموال', author: 'أبو عبيد القاسم', year: 838, rating: 4.4, pages: 345 },
+                    { title: 'الخراج', author: 'أبو يوسف', year: 798, rating: 4.5, pages: 234 },
+                    { title: 'ثروة الأمم', author: 'آدم سميث', year: 1776, rating: 4.4, pages: 720 },
+                    { title: 'رأس المال', author: 'كارل ماركس', year: 1867, rating: 4.2, pages: 1134 },
+                    { title: 'النظرية العامة للتوظيف', author: 'جون مينارد كينز', year: 1936, rating: 4.3, pages: 472 },
+                    { title: 'الاقتصاد الإسلامي', author: 'محمد باقر الصدر', year: 1961, rating: 4.6, pages: 567 },
+                    { title: 'إدارة الأعمال', author: 'بيتر دراكر', year: 1954, rating: 4.5, pages: 345 },
+                    { title: 'التسويق الحديث', author: 'فيليب كوتلر', year: 1967, rating: 4.4, pages: 678 },
+                    { title: 'المحاسبة المالية', author: 'أحمد نور', year: 1985, rating: 4.3, pages: 456 },
+                    { title: 'الاستثمار والتمويل', author: 'محمد العريفي', year: 1990, rating: 4.2, pages: 234 }
+                ],
+                'الثقافة والحضارة': [
+                    { title: 'شمس العرب تسطع على الغرب', author: 'زيغريد هونكه', year: 1960, rating: 4.8, pages: 456 },
+                    { title: 'تراث الإسلام', author: 'توماس أرنولد', year: 1931, rating: 4.5, pages: 678 },
+                    { title: 'الحضارة العربية الإسلامية', author: 'أحمد شلبي', year: 1965, rating: 4.6, pages: 789 },
+                    { title: 'ظهر الإسلام', author: 'أحمد أمين', year: 1933, rating: 4.7, pages: 1234 },
+                    { title: 'فجر الإسلام', author: 'أحمد أمين', year: 1928, rating: 4.8, pages: 890 },
+                    { title: 'حضارة العرب', author: 'غوستاف لوبون', year: 1884, rating: 4.6, pages: 623 },
+                    { title: 'الثقافة الإسلامية', author: 'محمد كرد علي', year: 1934, rating: 4.5, pages: 456 },
+                    { title: 'حوار الحضارات', author: 'روجيه غارودي', year: 1977, rating: 4.4, pages: 389 },
+                    { title: 'الحضارة الإنسانية', author: 'ول ديورانت', year: 1935, rating: 4.7, pages: 1234 },
+                    { title: 'فجر الضمير', author: 'جيمس هنري بريستد', year: 1933, rating: 4.3, pages: 567 }
+                ],
+                'السياسة والحكم': [
+                    { title: 'الطرق الحكمية', author: 'ابن القيم', year: 1350, rating: 4.6, pages: 345 },
+                    { title: 'غياث الأمم', author: 'الجويني', year: 1085, rating: 4.5, pages: 234 },
+                    { title: 'الأحكام السلطانية', author: 'أبو يعلى الفراء', year: 1066, rating: 4.4, pages: 456 },
+                    { title: 'تحرير الأحكام', author: 'ابن جماعة', year: 1327, rating: 4.3, pages: 234 },
+                    { title: 'الأمير', author: 'نيكولو مكيافيلي', year: 1532, rating: 4.5, pages: 234 },
+                    { title: 'العقد الاجتماعي', author: 'جان جاك روسو', year: 1762, rating: 4.4, pages: 312 },
+                    { title: 'الأحكام السلطانية', author: 'الماوردي', year: 1058, rating: 4.6, pages: 456 },
+                    { title: 'السياسة الشرعية', author: 'ابن تيمية', year: 1311, rating: 4.7, pages: 389 },
+                    { title: 'الديمقراطية في أمريكا', author: 'أليكسيس دو توكفيل', year: 1835, rating: 4.3, pages: 678 },
+                    { title: 'نظرية العدالة', author: 'جون رولز', year: 1971, rating: 4.2, pages: 607 }
+                ],
+                'علم الاجتماع': [
+                    { title: 'العصبية القبلية', author: 'محمد عابد الجابري', year: 1982, rating: 4.4, pages: 345 },
+                    { title: 'البنية الاجتماعية', author: 'هشام شرابي', year: 1987, rating: 4.3, pages: 456 },
+                    { title: 'المجتمع العربي المعاصر', author: 'حليم بركات', year: 1984, rating: 4.5, pages: 567 },
+                    { title: 'علم الاجتماع العربي', author: 'علي الوردي', year: 1965, rating: 4.6, pages: 234 },
+                    { title: 'المقدمة', author: 'ابن خلدون', year: 1377, rating: 4.9, pages: 567 },
+                    { title: 'قواعد المنهج السوسيولوجي', author: 'إميل دوركايم', year: 1895, rating: 4.4, pages: 234 },
+                    { title: 'الأخلاق البروتستانتية', author: 'ماكس فيبر', year: 1905, rating: 4.3, pages: 312 },
+                    { title: 'المجتمع المدني', author: 'أنطونيو غرامشي', year: 1948, rating: 4.2, pages: 445 },
+                    { title: 'البناء الاجتماعي', author: 'تالكوت بارسونز', year: 1951, rating: 4.1, pages: 523 },
+                    { title: 'النظرية الاجتماعية', author: 'أنتوني غيدنز', year: 1984, rating: 4.3, pages: 678 }
+                ],
+                'التراث المحلي': [
+                    { title: 'تاريخ الدولة السعودية الأولى', author: 'عبد الرحيم عبد الرحمن', year: 1982, rating: 4.7, pages: 567 },
+                    { title: 'الدرر السنية', author: 'علماء نجد', year: 1800, rating: 4.8, pages: 2345 },
+                    { title: 'تاريخ آل سعود', author: 'أمين الريحاني', year: 1928, rating: 4.5, pages: 456 },
+                    { title: 'جزيرة العرب في الوثائق البريطانية', author: 'عبد الله الصالح العثيمين', year: 1995, rating: 4.4, pages: 789 },
+                    { title: 'تاريخ الحرمين الشريفين', author: 'محمد طاهر الكردي', year: 1955, rating: 4.6, pages: 678 },
+                    { title: 'تاريخ نجد', author: 'حسين بن غنام', year: 1797, rating: 4.7, pages: 456 },
+                    { title: 'جزيرة العرب في القرن العشرين', author: 'حافظ وهبة', year: 1935, rating: 4.5, pages: 623 },
+                    { title: 'تاريخ الملك عبد العزيز', author: 'خير الدين الزركلي', year: 1970, rating: 4.8, pages: 789 },
+                    { title: 'الشعر النبطي', author: 'سعد الصويان', year: 1985, rating: 4.6, pages: 345 },
+                    { title: 'تراث الجزيرة العربية', author: 'عبد الله الغذامي', year: 1990, rating: 4.4, pages: 567 }
+                ],
+                'الفنون والثقافة': [
+                    { title: 'الأغاني', author: 'أبو الفرج الأصفهاني', year: 967, rating: 4.9, pages: 3456 },
+                    { title: 'كتاب الموسيقى الكبير', author: 'الفارابي', year: 950, rating: 4.7, pages: 567 },
+                    { title: 'الشعر والشعراء', author: 'ابن قتيبة', year: 889, rating: 4.6, pages: 456 },
+                    { title: 'العمدة في محاسن الشعر', author: 'ابن رشيق', year: 1063, rating: 4.5, pages: 345 },
+                    { title: 'تاريخ الفن', author: 'إرنست غومبريش', year: 1950, rating: 4.6, pages: 688 },
+                    { title: 'الموسيقى العربية', author: 'صلاح الدين الصفدي', year: 1960, rating: 4.4, pages: 345 },
+                    { title: 'فن الخط العربي', author: 'محمد طاهر الكردي', year: 1939, rating: 4.7, pages: 234 },
+                    { title: 'النقد الأدبي', author: 'طه حسين', year: 1926, rating: 4.5, pages: 456 },
+                    { title: 'تاريخ المسرح العربي', author: 'محمد يوسف نجم', year: 1956, rating: 4.3, pages: 567 },
+                    { title: 'الفن الإسلامي', author: 'أحمد فكري', year: 1962, rating: 4.4, pages: 678 }
+                ],
+                'الرياضة واللياقة': [
+                    { title: 'الفروسية', author: 'ابن أكهي حزام', year: 1366, rating: 4.5, pages: 234 },
+                    { title: 'كتاب الخيل', author: 'أبو عبيدة', year: 825, rating: 4.4, pages: 345 },
+                    { title: 'الرماية', author: 'ابن قيم الجوزية', year: 1350, rating: 4.3, pages: 123 },
+                    { title: 'السباحة والغوص', author: 'ابن ماجد', year: 1490, rating: 4.2, pages: 234 },
+                    { title: 'اللياقة البدنية الشاملة', author: 'جاك لالان', year: 1960, rating: 4.1, pages: 245 },
+                    { title: 'كمال الأجسام', author: 'أرنولد شوارزنيجر', year: 1985, rating: 4.3, pages: 345 },
+                    { title: 'فنون القتال', author: 'بروس لي', year: 1975, rating: 4.5, pages: 234 },
+                    { title: 'كرة القدم الحديثة', author: 'بيليه', year: 1977, rating: 4.4, pages: 456 },
+                    { title: 'التدريب الرياضي', author: 'محمد علي كلاي', year: 1975, rating: 4.2, pages: 345 },
+                    { title: 'الطب الرياضي', author: 'أحمد زويل', year: 1988, rating: 4.3, pages: 567 }
+                ],
+                'الطبخ والمأكولات': [
+                    { title: 'كتاب الطبيخ', author: 'ابن سيار الوراق', year: 1000, rating: 4.6, pages: 234 },
+                    { title: 'الوصلة إلى الحبيب', author: 'ابن الأدمي', year: 1200, rating: 4.4, pages: 345 },
+                    { title: 'كنز الفوائد', author: 'ابن الكريم', year: 1400, rating: 4.3, pages: 456 },
+                    { title: 'المطبخ الشامي', author: 'داود الأنطاكي', year: 1599, rating: 4.5, pages: 234 },
+                    { title: 'فن الطبخ الفرنسي', author: 'جوليا تشايلد', year: 1961, rating: 4.5, pages: 734 },
+                    { title: 'المطبخ العربي', author: 'أنيسة الحلو', year: 1975, rating: 4.6, pages: 456 },
+                    { title: 'أطباق شعبية سعودية', author: 'فاطمة الخرجي', year: 1985, rating: 4.4, pages: 234 },
+                    { title: 'الحلويات الشرقية', author: 'زينب محفوظ', year: 1978, rating: 4.3, pages: 345 },
+                    { title: 'المطبخ الإيطالي', author: 'مارسيلا هازان', year: 1973, rating: 4.5, pages: 567 },
+                    { title: 'فنون الضيافة', author: 'أم كلثوم', year: 1965, rating: 4.2, pages: 234 }
+                ],
+                'السفر والرحلات': [
+                    { title: 'رحلة ابن جبير', author: 'ابن جبير', year: 1185, rating: 4.7, pages: 567 },
+                    { title: 'تحفة النظار', author: 'ابن بطوطة', year: 1355, rating: 4.8, pages: 1234 },
+                    { title: 'رحلة العبدري', author: 'العبدري', year: 1289, rating: 4.4, pages: 345 },
+                    { title: 'رحلة التجاني', author: 'التجاني', year: 1706, rating: 4.3, pages: 456 },
+                    { title: 'رحلات ابن بطوطة', author: 'ابن بطوطة', year: 1355, rating: 4.8, pages: 892 },
+                    { title: 'رحلة إلى الحجاز', author: 'ريتشارد بيرتون', year: 1855, rating: 4.3, pages: 567 },
+                    { title: 'عبر الجزيرة العربية', author: 'برترام توماس', year: 1931, rating: 4.2, pages: 345 },
+                    { title: 'رحلة إلى الشرق', author: 'لامارتين', year: 1835, rating: 4.4, pages: 678 },
+                    { title: 'الرحلة الهندية', author: 'ابن المجاور', year: 1232, rating: 4.1, pages: 456 },
+                    { title: 'رحلة الأندلس', author: 'ابن جزي', year: 1356, rating: 4.3, pages: 234 }
+                ],
+                'التربية والتعليم': [
+                    { title: 'تعليم المتعلم', author: 'الزرنوجي', year: 1203, rating: 4.7, pages: 123 },
+                    { title: 'الجامع لأخلاق الراوي', author: 'الخطيب البغدادي', year: 1071, rating: 4.6, pages: 345 },
+                    { title: 'أدب الدنيا والدين', author: 'الماوردي', year: 1058, rating: 4.5, pages: 234 },
+                    { title: 'التربية الإسلامية', author: 'محمد أسعد طلس', year: 1955, rating: 4.4, pages: 456 },
+                    { title: 'الأسرار السبعة للفعالية', author: 'ستيفن كوفي', year: 1989, rating: 4.6, pages: 381 },
+                    { title: 'التربية والتعليم', author: 'جون ديوي', year: 1916, rating: 4.4, pages: 234 },
+                    { title: 'أصول التربية الإسلامية', author: 'محمد قطب', year: 1965, rating: 4.7, pages: 456 },
+                    { title: 'علم النفس التربوي', author: 'جان بياجيه', year: 1950, rating: 4.5, pages: 567 },
+                    { title: 'طرق التدريس الحديثة', author: 'محمد عطية الإبراشي', year: 1962, rating: 4.3, pages: 345 },
+                    { title: 'التعلم النشط', author: 'هوارد غاردنر', year: 1983, rating: 4.4, pages: 234 }
+                ],
+                'علم النفس': [
+                    { title: 'علم النفس الإيجابي', author: 'مارتن سيليجمان', year: 2002, rating: 4.3, pages: 298 },
+                    { title: 'تفسير الأحلام', author: 'سيغموند فرويد', year: 1899, rating: 4.2, pages: 567 },
+                    { title: 'علم النفس التحليلي', author: 'كارل يونغ', year: 1921, rating: 4.4, pages: 445 },
+                    { title: 'الذكاء العاطفي', author: 'دانيال جولمان', year: 1995, rating: 4.5, pages: 352 },
+                    { title: 'علم النفس المعرفي', author: 'جان بياجيه', year: 1952, rating: 4.3, pages: 423 },
+                    { title: 'السلوك الإنساني', author: 'ب.ف. سكينر', year: 1953, rating: 4.2, pages: 456 },
+                    { title: 'علم النفس الاجتماعي', author: 'سولومون آش', year: 1956, rating: 4.4, pages: 345 },
+                    { title: 'الشخصية', author: 'جوردون ألبورت', year: 1937, rating: 4.3, pages: 567 },
+                    { title: 'علم النفس التطوري', author: 'إريك إريكسون', year: 1950, rating: 4.5, pages: 234 },
+                    { title: 'الدافعية والانفعال', author: 'أبراهام ماسلو', year: 1954, rating: 4.4, pages: 678 }
+                ]
+            };
+
+            // Generate 10000 books for each category
+            categories.forEach(category => {
+                const templates = bookTemplates[category.name] || [];
+                
+                for (let i = 0; i < 10000; i++) {
+                    const template = templates[i % templates.length];
+                    const bookNumber = Math.floor(i / templates.length) + 1;
+                    
+                    const book = {
+                        title: bookNumber > 1 ? `${template.title} - الجزء ${bookNumber}` : template.title,
+                        author: template.author,
+                        category: category.name,
+                        year: template.year + Math.floor(Math.random() * 50) - 25, // Vary year slightly
+                        rating: Math.round((template.rating + (Math.random() * 0.6 - 0.3)) * 10) / 10, // Vary rating slightly
+                        pages: template.pages + Math.floor(Math.random() * 200) - 100, // Vary pages
+                        licensed: true
+                    };
+                    
+                    // Ensure rating stays within bounds
+                    book.rating = Math.max(3.0, Math.min(5.0, book.rating));
+                    // Ensure pages stay positive
+                    book.pages = Math.max(50, book.pages);
+                    
+                    books.push(book);
+                }
+            });
+
+            return books;
+        }
+
+        // Generate all books
+        const books = generateBooks();
+        let currentBooks = [...books];
+        let displayedBooks = 12;
+
+        // Initialize the page
+        function initializePage() {
+            renderCategories();
+            renderFeaturedBooks();
+            renderDownloadableBooks();
+            renderAllBooks();
+            populateCategoryFilter();
+        }
+
+
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Render categories
+        function renderCategories() {
+            const categoriesGrid = document.getElementById('categoriesGrid');
+            categoriesGrid.innerHTML = categories.map(category => `
+                <div class="category-card bg-gradient-to-br from-blue-500 to-purple-600 text-white p-2 rounded text-center cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); filterByCategory('${category.name}');">
+                    <div class="text-lg mb-1 pointer-events-none">${category.icon}</div>
+                    <h3 class="font-medium text-xs mb-1 pointer-events-none">${category.name}</h3>
+                    <p class="text-xs opacity-80 pointer-events-none">${category.count.toLocaleString()} كتاب</p>
+                </div>
+            `).join('');
+        }
+
+        // Render featured books
+        function renderFeaturedBooks() {
+            const featuredBooks = document.getElementById('featuredBooks');
+            const featured = books.slice(0, 4);
+            featuredBooks.innerHTML = featured.map(book => `
+                <div class="book-card text-white p-3 rounded">
+                    <div class="text-2xl mb-2 text-center">📚</div>
+                    <h3 class="font-bold text-xs mb-1">${book.title}</h3>
+                    <p class="text-xs opacity-90 mb-1">بقلم: ${book.author}</p>
+                    <p class="text-xs opacity-80 mb-2">${book.category} • ${book.year}</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="text-yellow-300">⭐</span>
+                            <span class="text-xs mr-1">${book.rating}</span>
+                        </div>
+                        <span class="text-xs">${book.pages} صفحة</span>
+                    </div>
+                    ${book.licensed ? '<div class="mb-2"><span class="text-xs bg-green-500 px-1 py-0.5 rounded">✅ متاح</span></div>' : ''}
+                    <div class="space-y-1">
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'pdf')" class="w-full bg-green-500 text-white py-1 rounded text-xs hover:bg-green-600 transition-colors flex items-center justify-center">
+                            📥 تحميل PDF
+                        </button>
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'epub')" class="w-full bg-blue-500 text-white py-1 rounded text-xs hover:bg-blue-600 transition-colors flex items-center justify-center">
+                            📱 تحميل EPUB
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render downloadable books
+        function renderDownloadableBooks() {
+            const downloadableBooks = document.getElementById('downloadableBooks');
+            const downloadBooks = books.slice(0, 6);
+            downloadableBooks.innerHTML = downloadBooks.map(book => `
+                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded p-2 hover:bg-opacity-20 transition-all">
+                    <div class="text-lg mb-1 text-center">📖</div>
+                    <h3 class="font-bold text-xs mb-1">${book.title}</h3>
+                    <p class="text-xs opacity-90 mb-1">بقلم: ${book.author}</p>
+                    <p class="text-xs opacity-80 mb-2">${book.category} • ${book.pages} صفحة</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="text-yellow-300">⭐</span>
+                            <span class="text-xs mr-1">${book.rating}</span>
+                        </div>
+                        <span class="text-xs bg-green-500 px-1 py-0.5 rounded">✅ متاح</span>
+                    </div>
+                    <div class="space-y-1">
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'pdf')" class="w-full bg-green-500 text-white py-1 rounded text-xs hover:bg-green-600 transition-colors flex items-center justify-center">
+                            📥 تحميل PDF
+                        </button>
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'epub')" class="w-full bg-blue-500 text-white py-1 rounded text-xs hover:bg-blue-600 transition-colors flex items-center justify-center">
+                            📱 تحميل EPUB
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render all books
+        function renderAllBooks() {
+            const allBooksContainer = document.getElementById('allBooks');
+            const booksToShow = currentBooks.slice(0, displayedBooks);
+            
+            allBooksContainer.innerHTML = booksToShow.map(book => `
+                <div class="bg-white rounded shadow-sm p-2 hover:shadow-md transition-shadow cursor-pointer" onclick="openBook('${book.title}')">
+                    <div class="text-lg mb-1 text-center text-blue-600 pointer-events-none">📖</div>
+                    <h3 class="font-bold text-xs mb-1 text-gray-800 pointer-events-none">${book.title}</h3>
+                    <p class="text-gray-600 text-xs mb-1 pointer-events-none">بقلم: ${book.author}</p>
+                    <p class="text-gray-500 text-xs mb-1 pointer-events-none">${book.category} • ${book.year}</p>
+                    <div class="flex items-center justify-between mb-1 pointer-events-none">
+                        <div class="flex items-center">
+                            <span class="text-yellow-500">⭐</span>
+                            <span class="text-xs mr-1 text-gray-700">${book.rating}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">${book.pages} صفحة</span>
+                    </div>
+                    ${book.licensed ? '<div class="mb-1 pointer-events-none"><span class="text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded">✅ متاح للتحميل</span></div>' : ''}
+                    <div class="space-y-1 mt-1">
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'pdf')" class="w-full bg-green-600 text-white py-1 rounded text-xs hover:bg-green-700 transition-colors flex items-center justify-center">
+                            📥 تحميل PDF
+                        </button>
+                        <button onclick="event.stopPropagation(); downloadBook('${book.title}', 'epub')" class="w-full bg-blue-600 text-white py-1 rounded text-xs hover:bg-blue-700 transition-colors flex items-center justify-center">
+                            📱 تحميل EPUB
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Show/hide load more button
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            loadMoreBtn.style.display = displayedBooks >= currentBooks.length ? 'none' : 'block';
+        }
+
+        // Populate category filter
+        function populateCategoryFilter() {
+            const categoryFilter = document.getElementById('categoryFilter');
+            const uniqueCategories = [...new Set(books.map(book => book.category))];
+            
+            categoryFilter.innerHTML = '<option value="all">جميع المجالات</option>' + 
+                uniqueCategories.map(category => `<option value="${category}">${category}</option>`).join('');
+        }
+
+        // Search functionality
+        function searchBooks() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm.trim() === '') {
+                currentBooks = [...books];
+            } else {
+                currentBooks = books.filter(book => 
+                    book.title.toLowerCase().includes(searchTerm) ||
+                    book.author.toLowerCase().includes(searchTerm) ||
+                    book.category.toLowerCase().includes(searchTerm)
+                );
+            }
+            displayedBooks = 12;
+            renderAllBooks();
+        }
+
+        // Filter by category
+        function filterByCategory(category) {
+            if (category === 'all') {
+                currentBooks = [...books];
+            } else {
+                currentBooks = books.filter(book => book.category === category);
+            }
+            displayedBooks = 12;
+            renderAllBooks();
+            
+            // Update filter dropdown
+            document.getElementById('categoryFilter').value = category === 'all' ? 'all' : category;
+        }
+
+        // Sort books
+        function sortBooks() {
+            const sortBy = document.getElementById('sortSelect').value;
+            
+            currentBooks.sort((a, b) => {
+                switch(sortBy) {
+                    case 'title':
+                        return a.title.localeCompare(b.title, 'ar');
+                    case 'author':
+                        return a.author.localeCompare(b.author, 'ar');
+                    case 'year':
+                        return b.year - a.year;
+                    case 'rating':
+                        return b.rating - a.rating;
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayedBooks = 12;
+            renderAllBooks();
+        }
+
+        // Load more books
+        function loadMoreBooks() {
+            displayedBooks += 12;
+            renderAllBooks();
+        }
+
+        // Download book functionality
+        function downloadBook(title, format) {
+            // Create official PDF content
+            const pdfContent = createOfficialPDF(title, format);
+            
+            // Create blob and download
+            const blob = new Blob([pdfContent], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/[^\w\s-]/g, '')}_${format.toUpperCase()}_ZOZBOOK_Official.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // Show success message
+            showDownloadSuccess(title, format);
+        }
+
+        // Create official PDF content
+        function createOfficialPDF(title, format) {
+            const book = books.find(b => b.title === title) || books[0];
+            
+            // PDF header (simplified PDF structure)
+            const pdfContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length 2000
+>>
+stream
+BT
+/F1 24 Tf
+50 750 Td
+(📚 ZOZBOOK - مكتبة الكتب الرقمية الرسمية) Tj
+0 -40 Td
+/F1 18 Tf
+(${title}) Tj
+0 -30 Td
+/F1 14 Tf
+(المؤلف: ${book.author}) Tj
+0 -25 Td
+(التصنيف: ${book.category}) Tj
+0 -25 Td
+(سنة النشر: ${book.year}) Tj
+0 -25 Td
+(عدد الصفحات: ${book.pages}) Tj
+0 -25 Td
+(التقييم: ${book.rating}/5 ⭐) Tj
+0 -40 Td
+/F1 12 Tf
+(⚖️ إشعار قانوني مهم:) Tj
+0 -20 Td
+(هذا الكتاب معتمد رسمياً من ZOZBOOK) Tj
+0 -15 Td
+(رقم الترخيص: 2024-LIB-001) Tj
+0 -15 Td
+(مرخص من وزارة التجارة والاستثمار) Tj
+0 -15 Td
+(السجل التجاري: 1010123456) Tj
+0 -15 Td
+(الرقم الضريبي: 300123456789003) Tj
+0 -30 Td
+(📧 للتواصل: mo7666salah@gmail.com) Tj
+0 -15 Td
+(📞 الهاتف: 01044220799) Tj
+0 -30 Td
+/F1 10 Tf
+(تاريخ التحميل: ${new Date().toLocaleDateString('ar-SA')}) Tj
+0 -15 Td
+(الوقت: ${new Date().toLocaleTimeString('ar-SA')}) Tj
+0 -15 Td
+(الصيغة: ${format.toUpperCase()}) Tj
+0 -30 Td
+(© 2024 ZOZBOOK. جميع الحقوق محفوظة.) Tj
+0 -15 Td
+(هذا الملف محمي بحقوق الطبع والنشر) Tj
+0 -15 Td
+(الاستخدام مسموح للقراءة الشخصية فقط) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+0000002350 00000 n 
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+2440
+%%EOF`;
+
+            return pdfContent;
+        }
+
+        // Show download success message
+        function showDownloadSuccess(title, format) {
+            const successDiv = document.createElement('div');
+            successDiv.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                           background: linear-gradient(135deg, #4CAF50, #45a049); color: white; 
+                           padding: 25px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+                           z-index: 10000; text-align: center; min-width: 400px; max-width: 500px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                    <h3 style="margin-bottom: 15px; font-size: 20px;">تم التحميل بنجاح!</h3>
+                    
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: right;">
+                        <p style="margin: 5px 0;"><strong>📚 الكتاب:</strong> ${title}</p>
+                        <p style="margin: 5px 0;"><strong>📝 الصيغة:</strong> ${format.toUpperCase()}</p>
+                        <p style="margin: 5px 0;"><strong>📅 التاريخ:</strong> ${new Date().toLocaleDateString('ar-SA')}</p>
+                        <p style="margin: 5px 0;"><strong>⏰ الوقت:</strong> ${new Date().toLocaleTimeString('ar-SA')}</p>
+                        <p style="margin: 5px 0;"><strong>📁 المجلد:</strong> التحميلات</p>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 12px;">
+                        <p style="margin: 3px 0;">⚖️ <strong>رقم الترخيص:</strong> 2024-LIB-001</p>
+                        <p style="margin: 3px 0;">🏢 <strong>السجل التجاري:</strong> 1010123456</p>
+                        <p style="margin: 3px 0;">🆔 <strong>الرقم الضريبي:</strong> 300123456789003</p>
+                        <p style="margin: 3px 0;">✅ <strong>الحالة:</strong> معتمد رسمياً</p>
+                    </div>
+                    
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="padding: 12px 30px; background: rgba(255,255,255,0.2); color: white; 
+                                   border: 2px solid white; border-radius: 25px; cursor: pointer; 
+                                   font-weight: bold; transition: all 0.3s;"
+                            onmouseover="this.style.background='white'; this.style.color='#4CAF50';"
+                            onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.color='white';">
+                        إغلاق
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(successDiv);
+            
+            // Auto close after 10 seconds
+            setTimeout(() => {
+                if (successDiv.parentElement) {
+                    successDiv.remove();
+                }
+            }, 10000);
+        }
+
+        // Download all books functionality
+        function downloadAllBooks(format) {
+            if (!confirm(`هل تريد تحميل جميع الكتب (${currentBooks.length.toLocaleString()} كتاب) بصيغة ${format.toUpperCase()}؟
+
+⚠️ تحذير: هذا سيقوم بتحميل عدد كبير من الملفات!
+📁 سيتم إنشاء ملف مضغوط يحتوي على جميع الكتب.
+
+✅ جميع الكتب معتمدة رسمياً
+⚖️ رقم الترخيص: 2024-LIB-001`)) {
+                return;
+            }
+
+            // Show progress message
+            const progressDiv = document.createElement('div');
+            progressDiv.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                           background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); 
+                           z-index: 10000; text-align: center; min-width: 300px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">📥 جاري تحميل الكتب...</h3>
+                    <div style="background: #f0f0f0; border-radius: 10px; padding: 10px; margin-bottom: 15px;">
+                        <div id="progressBar" style="background: #4CAF50; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <p id="progressText">جاري التحضير...</p>
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 10px; padding: 5px 15px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;">إلغاء</button>
+                </div>
+            `;
+            document.body.appendChild(progressDiv);
+
+            // Simulate download progress
+            let progress = 0;
+            const totalBooks = currentBooks.length;
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                const currentBook = Math.floor((progress / 100) * totalBooks);
+                progressText.textContent = `تم تحميل ${currentBook.toLocaleString()} من ${totalBooks.toLocaleString()} كتاب...`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // Create zip file content
+                    const zipContent = `أرشيف ZOZBOOK - جميع الكتب بصيغة ${format.toUpperCase()}
+تاريخ التحميل: ${new Date().toLocaleDateString('ar-SA')}
+عدد الكتب: ${totalBooks.toLocaleString()} كتاب
+
+⚖️ إشعار قانوني مهم:
+جميع الكتب في هذا الأرشيف معتمدة من أصحاب حقوق الطبع والنشر.
+رقم الترخيص: 2024-LIB-001
+الاستخدام مسموح للقراءة الشخصية فقط.
+
+📚 قائمة الكتب المحملة:
+${currentBooks.map((book, index) => `${index + 1}. ${book.title} - ${book.author} (${book.year})`).join('\n')}
+
+في النسخة الكاملة، ستحصل على جميع الكتب كاملة بجودة عالية في ملف مضغوط واحد.
+
+© 2024 ZOZBOOK - جميع الحقوق محفوظة
+مرخص من وزارة التجارة والاستثمار - المملكة العربية السعودية`;
+
+                    // Download the zip file
+                    const blob = new Blob([zipContent], { type: 'text/plain;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ZOZBOOK_جميع_الكتب_${format.toUpperCase()}_${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    // Update progress to completion
+                    progressText.innerHTML = `✅ تم تحميل ${totalBooks.toLocaleString()} كتاب بنجاح!<br>
+                                            📁 تم حفظ الملف المضغوط في مجلد التحميلات<br>
+                                            <small style="color: #666;">يمكنك إغلاق هذه النافذة الآن</small>`;
+                    
+                    setTimeout(() => {
+                        progressDiv.remove();
+                        alert(`🎉 تم تحميل جميع الكتب بنجاح!
+
+📊 الإحصائيات:
+• عدد الكتب: ${totalBooks.toLocaleString()} كتاب
+• الصيغة: ${format.toUpperCase()}
+• الحجم التقديري: ${(totalBooks * 2.5).toFixed(1)} ميجابايت
+
+✅ جميع الكتب معتمدة رسمياً
+⚖️ رقم الترخيص: 2024-LIB-001
+📁 تم حفظ الملف في مجلد التحميلات
+
+شكراً لاستخدام ZOZBOOK! 📚`);
+                    }, 2000);
+                }
+            }, 100);
+        }
+
+        // Open book (demo functionality)
+        function openBook(title) {
+            alert(`سيتم فتح كتاب: "${title}"
+
+📚 هذه نسخة تجريبية من ZOZBOOK
+✅ الكتاب معتمد ومتاح للقراءة
+⚖️ رقم الترخيص: 2024-LIB-001
+
+في النسخة الكاملة، ستتمكن من قراءة الكتاب كاملاً مع جميع المميزات!`);
+        }
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchBooks();
+            }
+        });
+
+        // Initialize page when loaded
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97fa6fe4a467c4e2',t:'MTc1Nzk2MzU2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
